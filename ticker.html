@@ -9,7 +9,7 @@
       --bg: transparent;
       --text:#EAF2FF;
       --muted:#9AA7B8;
-      --coindesk:#3b82f6; /* CoinDesk blue */
+      --coindesk:#3b82f6;
     }
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
     body{overflow:hidden}
@@ -19,32 +19,65 @@
     .item{margin-right:28px}
     .src{color:var(--muted);font-weight:800;margin-right:6px}
     .src.coindesk{color:var(--coindesk)}
-    .src.cointelegraph{ color:#f7931a; }
+    .src.cointelegraph{color:#f7931a;}
 
     @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
   </style>
 </head>
 <body>
-  <div class="wrap"><div class="marquee"><div class="track" id="track">Loading…</div></div></div>
+  <div class="wrap">
+    <div class="marquee">
+      <div class="track" id="track">Loading…</div>
+    </div>
+  </div>
+
   <script>
-    const API="/api/news"; let last="";
-    function esc(s){return String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+    const API="/api/news";
+    let last="";
+
+    function esc(s){
+      return String(s||"")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+    }
+
     function build(items){
       if(!items||!items.length) return "No news yet";
+
       return items.map(it=>{
-        const src = esc(it.source);
-        const cls = (it.source === "CoinDesk") ? "src coindesk" : "src";
-        return `<span class="item"><span class="${cls}">${src}:</span>${esc(it.title)}</span>`;
+        const srcRaw = String(it.source || "");
+        let cls = "src";
+
+        if (/coindesk/i.test(srcRaw)) {
+          cls = "src coindesk";
+        } else if (/cointelegraph/i.test(srcRaw)) {
+          cls = "src cointelegraph";
+        }
+
+        return `
+          <span class="item">
+            <span class="${cls}">${esc(srcRaw)}:</span>
+            ${esc(it.title)}
+          </span>
+        `;
       }).join(" • ");
     }
+
     async function poll(){
       try{
-        const r=await fetch(API,{cache:"no-store"}); const j=await r.json();
-        const html=build(j.items);
-        if(html!==last){ last=html; document.getElementById("track").innerHTML=html; }
+        const r = await fetch(API,{cache:"no-store"});
+        const j = await r.json();
+        const html = build(j.items);
+
+        if(html!==last){
+          last = html;
+          document.getElementById("track").innerHTML = html;
+        }
       }catch(e){}
     }
-    poll(); setInterval(poll,15000);
+
+    poll();
+    setInterval(poll,15000);
   </script>
 </body>
 </html>
